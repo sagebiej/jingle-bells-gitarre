@@ -169,12 +169,12 @@ const MEL=[
 [2,'G4','one-'],[2,'G4','horse'],[2,'F4','o-'],[2,'D4','pen'],[8,'C4','sleigh!']];
 const FR={G3:[3,0],A3:[3,2],B3:[2,0],C4:[2,1],D4:[2,3],E4:[1,0],F4:[1,1],G4:[1,3],A4:[1,5]};
 // chords per bar; frets from 6th to 1st string (-1 = not played), fingers likewise
-const CH=['C','C','C','F','F','G','G7','C','C','C','C','F','F','G','G7','C','C','C','C','C','F','C','D7','G','C','C','C','C','F','C','G7','C'];
+const CH=['C','Em','C','Dm','Dm','G','G','C','C','Em','C','Dm','Dm','G','G','C','C','C','C','C','Dm','C','D','G','C','C','C','C','Dm','C','G','C'];
 const CHD={C:{f:[-1,3,2,0,1,0],g:[0,3,2,0,1,0],t:'3 Finger · tiefe E-Saite nicht spielen'},
-  F:{f:[-1,-1,3,2,1,1],g:[0,0,3,2,1,1],t:'kleines F · nur die 4 hohen Saiten'},
-  G:{f:[3,2,0,0,0,3],g:[2,1,0,0,0,3],t:'alle 6 Saiten'},
-  G7:{f:[3,2,0,0,0,1],g:[3,2,0,0,0,1],t:'alle 6 Saiten'},
-  D7:{f:[-1,-1,0,2,1,2],g:[0,0,0,2,1,3],t:'nur die 4 hohen Saiten'}};
+  Dm:{f:[-1,-1,0,2,3,1],g:[0,0,0,2,3,1],t:'3 Finger · nur die 4 hohen Saiten'},
+  Em:{f:[0,2,2,0,0,0],g:[0,2,3,0,0,0],t:'2 Finger · alle 6 Saiten'},
+  G:{f:[3,2,0,0,0,3],g:[2,1,0,0,0,3],t:'3 Finger · alle 6 Saiten'},
+  D:{f:[-1,-1,0,2,3,2],g:[0,0,0,1,3,2],t:'3 Finger · nur die 4 hohen Saiten'}};
 const CHS=CH.map((c,b)=>{let k=b;while(k>0&&k!==16&&CH[k-1]===c)k--;return k}); // bar where the current chord starts
 const SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11},LET='CDEFGAB',DE={C:'C',D:'D',E:'E',F:'F',G:'G',A:'A',B:'H'};
 let t=0;
