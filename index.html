@@ -78,13 +78,21 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
 #score-ok{font-weight:800}
 .hint{color:var(--mute);font-size:14px;margin:0}
 #micmsg{color:var(--red);font-weight:700}
+.chd{font:600 18px Fredoka,sans-serif;fill:var(--ink)}
+.chd.on{fill:var(--red)}
+#chdline{margin-top:6px;font-weight:700}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:700px){.mid{grid-template-columns:minmax(0,1fr)}#nname{font-size:56px}input[type=range]{width:140px}}
 @media(prefers-reduced-motion:reduce){#count{transition:none}}
 </style>
 </head>
 <body>
 <header class="band">
-  <div><h1>Jingle Bells</h1><p>Gitarre · Melodie in C-Dur · Noten und TAB</p></div>
+  <div><h1>Jingle Bells</h1><p>Gitarre · C-Dur · Melodie und Akkorde</p></div>
+  <div class="seg" role="group" aria-label="Was üben">
+    <button id="u-mel" aria-pressed="true">Melodie</button>
+    <button id="u-chd" aria-pressed="false">Akkorde</button>
+  </div>
   <div class="seg" role="group" aria-label="Modus">
     <button id="m-play" aria-pressed="true">Mitspielen</button>
     <button id="m-wait" aria-pressed="false">Üben mit Mikro</button>
@@ -102,6 +110,7 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
   <div class="card">
     <div id="big"><span id="nname">G</span><span id="where">3. Saite<br>leer</span></div>
     <div id="word"></div>
+    <div id="chdline"></div>
     <div id="next"></div>
   </div>
   <div class="card"><svg id="fb" viewBox="0 0 560 190" role="img" aria-label="Griffbrett"></svg></div>
@@ -121,6 +130,7 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
   <div class="ctl" style="margin-top:14px">
     <div class="pills">
       <label class="pill"><input type="checkbox" id="o-mel" checked>Melodie hören</label>
+      <label class="pill"><input type="checkbox" id="o-chd">Akkorde hören</label>
       <label class="pill"><input type="checkbox" id="o-drum">Schlagzeug</label>
       <label class="pill"><input type="checkbox" id="o-click">Metronom</label>
       <label class="pill"><input type="checkbox" id="o-count" checked>Einzählen</label>
@@ -134,7 +144,7 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
     <button class="btn" id="skip">Ton überspringen →</button>
     <span id="micmsg"></span>
   </div>
-  <p class="hint" style="margin-top:14px">Leertaste = Start/Stopp. Im Übungsmodus wartet der Strich, bis du den richtigen Ton spielst.</p>
+  <p class="hint" style="margin-top:14px">Leertaste = Start/Stopp. Im Übungsmodus wartet der Strich, bis du den richtigen Ton spielst. Bei „Akkorde“ zeigt das Griffbrett den Griff für jeden Takt.</p>
 </section>
 
 <script>
@@ -158,6 +168,14 @@ const MEL=[
 [2,'F4','Oh,'],[2,'F4','what'],[2,'F4','fun'],[2,'F4','it'],[2,'F4','is'],[2,'E4','to'],[2,'E4','ride'],[1,'E4','in'],[1,'E4','a'],
 [2,'G4','one-'],[2,'G4','horse'],[2,'F4','o-'],[2,'D4','pen'],[8,'C4','sleigh!']];
 const FR={G3:[3,0],A3:[3,2],B3:[2,0],C4:[2,1],D4:[2,3],E4:[1,0],F4:[1,1],G4:[1,3],A4:[1,5]};
+// chords per bar; frets from 6th to 1st string (-1 = not played), fingers likewise
+const CH=['C','C','C','F','F','G','G7','C','C','C','C','F','F','G','G7','C','C','C','C','C','F','C','D7','G','C','C','C','C','F','C','G7','C'];
+const CHD={C:{f:[-1,3,2,0,1,0],g:[0,3,2,0,1,0],t:'3 Finger · tiefe E-Saite nicht spielen'},
+  F:{f:[-1,-1,3,2,1,1],g:[0,0,3,2,1,1],t:'kleines F · nur die 4 hohen Saiten'},
+  G:{f:[3,2,0,0,0,3],g:[2,1,0,0,0,3],t:'alle 6 Saiten'},
+  G7:{f:[3,2,0,0,0,1],g:[3,2,0,0,0,1],t:'alle 6 Saiten'},
+  D7:{f:[-1,-1,0,2,1,2],g:[0,0,0,2,1,3],t:'nur die 4 hohen Saiten'}};
+const CHS=CH.map((c,b)=>{let k=b;while(k>0&&k!==16&&CH[k-1]===c)k--;return k}); // bar where the current chord starts
 const SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11},LET='CDEFGAB',DE={C:'C',D:'D',E:'E',F:'F',G:'G',A:'A',B:'H'};
 let t=0;
 const N=MEL.map(([d,p,l],i)=>{const n={i,start:t/2,dur:d/2,p,lyr:l.replace(/-$/,''),hy:l.endsWith('-'),midi:12*(+p[1]+1)+SEMI[p[0]],s:FR[p][0],f:FR[p][1],name:DE[p[0]],diat:LET.indexOf(p[0])+7*(+p[1])};t+=d;return n});
@@ -183,7 +201,8 @@ const ny=n=>SB-(n.diat+7-30)*5; // written = sounding + octave; E4 written = bot
   h+='<g class="tabl">'+[0,1,2,3,4,5].map(k=>`<line x1="0" x2="${W}" y1="${TT+k*TG}" y2="${TT+k*TG}"/>`).join('')+'</g>';
   for(let b=0;b<=32;b++){const x=X0+b*4*PPB;h+=`<line class="bar" x1="${x}" x2="${x}" y1="${ST}" y2="${SB}"/><line class="bar" x1="${x}" x2="${x}" y1="${TT}" y2="${TT+5*TG}"/>`;
     if(b<32)h+=`<text class="lbl" x="${x+4}" y="${ST-14}">${b+1}</text>`}
-  h+=`<text class="reh" x="${X0+64*PPB+28}" y="${ST-14}">Refrain</text>`;
+  h+=`<text class="reh" x="${X0+64*PPB+60}" y="${ST-14}">Refrain</text>`;
+  CH.forEach((c,b)=>{if(CHS[b]===b)h+=`<text class="chd" id="c${b}" x="${X0+b*4*PPB+16}" y="${ST-24}">${c}</text>`});
   h+=`<line class="bar" x1="${X0+128*PPB-5}" x2="${X0+128*PPB-5}" y1="${ST}" y2="${SB}"/><rect x="${X0+128*PPB-2}" y="${ST}" width="5" height="40" fill="var(--line)"/>`;
   const beam=new Set();
   N.forEach((n,i)=>{const m=N[i+1];if(n.dur===.5&&m&&m.dur===.5&&n.start%1===0&&m.start===n.start+.5){beam.add(i);beam.add(i+1);n.bm=m}});
@@ -209,34 +228,46 @@ const ny=n=>SB-(n.diat+7-30)*5; // written = sounding + octave; E4 written = bot
 
 // ---------- fretboard
 const SNAME=['E','H','G','D','A','E'];
-function drawFB(cur,nxt){
+function drawFB(items){
   const L=70,R=540,T=22,G=26,fx=k=>L+k*(R-L)/5;
   let h=`<rect x="${L}" y="${T-8}" width="${R-L}" height="${5*G+16}" rx="6" fill="color-mix(in srgb,#c58b4f 30%,transparent)"/>`;
   for(let k=1;k<=5;k++)h+=`<line class="fbf" x1="${fx(k)}" x2="${fx(k)}" y1="${T-8}" y2="${T+5*G+8}"/><text class="fbt" x="${fx(k)-(R-L)/10}" y="${T+5*G+34}" text-anchor="middle">${k}</text>`;
   [3,5].forEach(k=>h+=`<circle cx="${fx(k)-(R-L)/10}" cy="${T+2.5*G}" r="6" fill="var(--mute)" opacity=".35"/>`);
   h+=`<rect x="${L-6}" y="${T-8}" width="8" height="${5*G+16}" fill="var(--ink)"/>`;
   for(let s=0;s<6;s++)h+=`<line class="fbs" x1="${L}" x2="${R}" y1="${T+s*G}" y2="${T+s*G}" stroke-width="${1+s*.5}"/><text class="fbt" x="${L-62}" y="${T+s*G+5}">${SNAME[s]}</text>`;
-  const dot=(n,main)=>{if(!n)return'';const y=T+(n.s-1)*G;
-    if(n.f===0)return main?`<circle cx="${L-26}" cy="${y}" r="10" fill="none" stroke="var(--green)" stroke-width="4"/>`:`<circle cx="${L-26}" cy="${y}" r="10" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="4 3"/>`;
-    const x=fx(n.f)-(R-L)/10,fing=n.f>=4?4:n.f;
-    return main?`<circle cx="${x}" cy="${y}" r="15" fill="var(--green)"/><text x="${x}" y="${y+6}" text-anchor="middle" style="font:800 17px Nunito;fill:#fff">${fing}</text>`
-               :`<circle cx="${x}" cy="${y}" r="14" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="4 3"/>`};
-  if(nxt&&cur&&(nxt.s!==cur.s||nxt.f!==cur.f))h+=dot(nxt,false);
-  h+=dot(cur,true);
+  const draw=it=>{const y=T+(it.s-1)*G,x=it.f>0?fx(it.f)-(R-L)/10:L-26;
+    if(it.k==='mute')return `<text x="${L-26}" y="${y+6}" text-anchor="middle" style="font:800 18px Nunito;fill:var(--mute)">×</text>`;
+    if(it.f===0)return it.k==='main'?`<circle cx="${x}" cy="${y}" r="10" fill="none" stroke="var(--green)" stroke-width="4"/>`:`<circle cx="${x}" cy="${y}" r="10" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="4 3"/>`;
+    return it.k==='main'?`<circle cx="${x}" cy="${y}" r="15" fill="var(--green)"/><text x="${x}" y="${y+6}" text-anchor="middle" style="font:800 17px Nunito;fill:#fff">${it.g}</text>`
+                       :`<circle cx="${x}" cy="${y}" r="14" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="4 3"/>`};
+  h+=items.filter(i=>i.k==='next').map(draw).join('')+items.filter(i=>i.k!=='next').map(draw).join('');
   $('fb').innerHTML=h;
 }
+const fing=n=>n.f>=4?4:n.f;
+function melFB(n,m){const it=[{s:n.s,f:n.f,g:fing(n),k:'main'}];if(m&&(m.s!==n.s||m.f!==n.f))it.push({s:m.s,f:m.f,k:'next'});drawFB(it)}
+function chdFB(c){const d=CHD[c];drawFB(d.f.map((f,k)=>({s:6-k,f,g:d.g[k],k:f<0?'mute':'main'})))}
 const SAITE=['1. Saite (hohe E)','2. Saite (H)','3. Saite (G)'];
 let shown=-1;
 function showNote(i){
   if(i===shown)return;shown=i;
   document.querySelectorAll('.nt.on').forEach(e=>e.classList.remove('on'));
   const n=N[i];if(!n)return;$('n'+i).classList.add('on');
+  $('word').textContent='„'+n.lyr+(n.hy?'-':'')+'“';
+  if(what!=='mel')return;
   $('nname').textContent=n.name;
   $('where').innerHTML=`${SAITE[n.s-1]}<br>${n.f===0?'leer':n.f+'. Bund'+(n.f===5?' (kleiner Finger)':'')}`;
-  $('word').textContent='„'+n.lyr+(n.hy?'-':'')+'“';
   const m=N[i+1];$('next').textContent=m?`Danach: ${m.name} · ${m.s}. Saite, ${m.f===0?'leer':m.f+'. Bund'}`:'Letzter Ton!';
-  drawFB(n,m);
+  melFB(n,m);
 }
+let shownC=-1;
+function showChord(b){if(b===shownC)return;shownC=b;const c=CH[b];
+  document.querySelectorAll('.chd.on').forEach(e=>e.classList.remove('on'));$('c'+CHS[b])?.classList.add('on');
+  $('chdline').textContent=what==='mel'?'Akkord: '+c:'';
+  if(what!=='chd')return;
+  let nb=b+1;while(nb<32&&CH[nb]===c)nb++;
+  $('nname').textContent=c;$('where').innerHTML=CHD[c].t.replace(' · ','<br>');
+  $('next').textContent=nb<32?`Danach: ${CH[nb]} in Takt ${nb+1}`:'Letzter Akkord!';
+  chdFB(c)}
 
 // ---------- audio
 let ctx=null,master=null;const bufs={};
@@ -244,19 +275,22 @@ function ac(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)(
 function ks(midi){if(bufs[midi])return bufs[midi];const sr=ctx.sampleRate,f=440*2**((midi-69)/12),P=Math.round(sr/f),len=Math.floor(sr*2),b=ctx.createBuffer(1,len,sr),y=b.getChannelData(0);
   for(let i=0;i<P;i++)y[i]=Math.random()*2-1;for(let i=P;i<len;i++)y[i]=.996*.5*(y[i-P]+y[i-P+1>=i?i-P:i-P+1]);
   let m=0;for(let i=0;i<len;i++)m=Math.max(m,Math.abs(y[i]));for(let i=0;i<len;i++)y[i]/=m;return bufs[midi]=b}
-function pluck(midi,at,dur){const s=ctx.createBufferSource(),g=ctx.createGain(),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
-  s.buffer=ks(midi);g.gain.setValueAtTime(.55,at);g.gain.setTargetAtTime(0,at+dur,.06);s.connect(lp).connect(g).connect(master);s.start(at);s.stop(at+dur+.5)}
+function pluck(midi,at,dur,vol=.55){const s=ctx.createBufferSource(),g=ctx.createGain(),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
+  s.buffer=ks(midi);g.gain.setValueAtTime(vol,at);g.gain.setTargetAtTime(0,at+dur,.06);s.connect(lp).connect(g).connect(master);s.start(at);s.stop(at+dur+.5)}
 let noiseB=null;function noise(){if(!noiseB){noiseB=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}return noiseB}
 function nz(at,hp,dec,vol){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise();f.type='highpass';f.frequency.value=hp;g.gain.setValueAtTime(vol,at);g.gain.exponentialRampToValueAtTime(.001,at+dec);s.connect(f).connect(g).connect(master);s.start(at);s.stop(at+dec+.05)}
 function tone(at,f0,f1,dec,vol,type='sine'){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,at);o.frequency.exponentialRampToValueAtTime(f1,at+dec*.6);g.gain.setValueAtTime(vol,at);g.gain.exponentialRampToValueAtTime(.001,at+dec);o.connect(g).connect(master);o.start(at);o.stop(at+dec+.05)}
 const DRUM={BD:a=>tone(a,140,45,.3,.9),SN:a=>{nz(a,1200,.16,.45);tone(a,200,160,.08,.25,'triangle')},HH:a=>nz(a,7000,.045,.18),CR:a=>nz(a,4500,1.3,.28),HT:a=>tone(a,220,150,.25,.6),FT:a=>tone(a,130,85,.35,.7)};
+const TUNE=[40,45,50,55,59,64];
+const strum=(c,a)=>{let k=0;CHD[c].f.forEach((f,i)=>{if(f>=0)pluck(TUNE[i]+f,a+.018*k++,spb*1.9,.22)})};
 const click=(a,acc)=>tone(a,acc?1500:1000,acc?1500:1000,.05,.35,'square');
 
 // ---------- transport
-let mode='play',sec='all',playing=false,beat=0,anchorBeat=0,anchorT=0,spb=60/80,evs=[],ep=0,countEnd=0,waitIdx=0,okCount=0,timer=null;
+let what='mel',mode='play',sec='all',playing=false,beat=0,anchorBeat=0,anchorT=0,spb=60/80,evs=[],ep=0,countEnd=0,waitIdx=0,okCount=0,timer=null;
 const opt=id=>$(id).checked;
 function buildEvents(){const [a,b]=SECS[sec];evs=[];
   if(mode==='play'){if(opt('o-mel'))N.forEach(n=>{if(n.start>=a&&n.start<b)evs.push([n.start,'m',n])});
+    if(opt('o-chd'))for(let x=a;x<b;x+=2)evs.push([x,'k',CH[Math.floor(x/4)]]);
     if(opt('o-drum'))DR.forEach(([x,k])=>{if(x>=a&&x<b)evs.push([x,'d',k])});}
   if(opt('o-click')&&mode==='play')for(let x=a;x<b;x++)evs.push([x,'c',x%4===0]);
   evs.sort((p,q)=>p[0]-q[0]);ep=evs.findIndex(e=>e[0]>=beat-1e-6);if(ep<0)ep=evs.length}
@@ -265,7 +299,7 @@ const timeAt=b=>anchorT+(b-anchorBeat)*spb;
 function schedule(){if(!playing)return;const now=ctx.currentTime;
   while(ep<evs.length){const e=evs[ep],tm=timeAt(e[0]);if(tm>now+.15)break;
     if(mode==='wait'&&e[0]>N[waitIdx]?.start)break;
-    if(tm>=now-.02){if(e[1]==='m')pluck(e[2].midi,tm,e[2].dur*spb);else if(e[1]==='d')DRUM[e[2]](tm);else click(tm,e[2])}ep++}}
+    if(tm>=now-.02){if(e[1]==='m')pluck(e[2].midi,tm,e[2].dur*spb);else if(e[1]==='d')DRUM[e[2]](tm);else if(e[1]==='k')strum(e[2],tm);else click(tm,e[2])}ep++}}
 function start(){ac();ctx.resume();const [a,b]=SECS[sec];if(beat<a||beat>=b)beat=a;
   playing=true;$('play').textContent='⏸ Stopp';
   const lead=.12,ci=opt('o-count')?4:0;anchorBeat=beat;anchorT=ctx.currentTime+lead+ci*spb;countEnd=anchorT;
@@ -290,6 +324,7 @@ function frame(force){
   svg.style.transform=`translateX(${ph-(X0+beat*PPB+16)}px)`;
   let i=mode==='wait'&&playing?waitIdx:N.findIndex(n=>beat<n.start+n.dur-1e-6);if(i<0)i=N.length-1;
   showNote(Math.min(i,N.length-1));
+  showChord(Math.min(31,Math.max(0,Math.floor(beat/4+1e-6))));
   if(!force)requestAnimationFrame(()=>frame())}
 
 // ---------- microphone + pitch detection
@@ -319,8 +354,13 @@ $('rew').onclick=rewind;
 $('skip').onclick=()=>{if(playing&&mode==='wait')accept()};
 $('tempo').oninput=e=>{const v=+e.target.value;$('tv').textContent=v;if(playing&&ctx){const now=Math.max(ctx.currentTime,countEnd);anchorBeat=beatAt(now);anchorT=now;spb=60/v;buildEvents()}else spb=60/v};
 document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-sec]').forEach(x=>x.setAttribute('aria-pressed',x===b));sec=b.dataset.sec;rewind()});
-['o-mel','o-drum','o-click'].forEach(id=>$(id).onchange=()=>{if(playing)buildEvents()});
+['o-mel','o-chd','o-drum','o-click'].forEach(id=>$(id).onchange=()=>{if(playing)buildEvents()});
 function setMode(m){mode=m;$('m-play').setAttribute('aria-pressed',m==='play');$('m-wait').setAttribute('aria-pressed',m==='wait');document.body.classList.toggle('wait',m==='wait');stop();clearOk();waiting=false;frame(true)}
+function setWhat(w){what=w;$('u-mel').setAttribute('aria-pressed',w==='mel');$('u-chd').setAttribute('aria-pressed',w==='chd');
+  $('m-wait').disabled=w==='chd';$('m-wait').title=w==='chd'?'Das Mikro erkennt nur einzelne Töne, keine Akkorde':'';
+  if(w==='chd'){if(mode==='wait')setMode('play');$('o-chd').checked=true}else $('o-chd').checked=false;
+  if(playing)buildEvents();shown=-1;shownC=-1;frame(true)}
+$('u-mel').onclick=()=>setWhat('mel');$('u-chd').onclick=()=>setWhat('chd');
 $('m-play').onclick=()=>setMode('play');$('m-wait').onclick=()=>setMode('wait');
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|BUTTON/.test(e.target.tagName)){e.preventDefault();playing?stop():start()}});
 document.fonts?.ready.then(()=>frame(true));
