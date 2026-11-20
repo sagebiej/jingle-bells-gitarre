@@ -91,6 +91,19 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
 #micmsg{color:var(--red);font-weight:700}
 .chd{font:600 18px Fredoka,sans-serif;fill:var(--ink)}
 .chd.on{fill:var(--red)}
+.cblk{display:none}
+.chdmode .cblk{display:inline}
+.chdmode .chd,.chdmode .lbl,.chdmode .reh{display:none}
+.chdmode .nt{opacity:.3}
+.cblk text.cn{font:600 14px Fredoka,sans-serif;fill:#fff}
+.sa circle{fill:rgba(255,255,255,.28)}
+.sa text{font:800 15px Nunito,sans-serif;fill:#fff;text-anchor:middle}
+.sa.on circle{fill:var(--gold)}
+.sa.on text{fill:#000}
+.sa.ok circle{fill:#fff}
+.sa.ok text{fill:var(--green)}
+.chdonly{display:none}
+.chdmode .chdonly{display:inline-flex}
 #chdline{margin-top:6px;font-weight:700}
 .seg button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:700px){.mid{grid-template-columns:minmax(0,1fr)}#nname{font-size:56px}input[type=range]{width:140px}}
@@ -137,6 +150,11 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
       <button data-sec="verse" aria-pressed="false">Strophe</button>
       <button data-sec="chorus" aria-pressed="false">Refrain</button>
     </div>
+    <div class="seg segd chdonly" role="group" aria-label="Anschlag pro Takt">
+      <button data-pat="1" aria-pressed="false">1× pro Takt</button>
+      <button data-pat="2" aria-pressed="true">2×</button>
+      <button data-pat="4" aria-pressed="false">4×</button>
+    </div>
     <div class="seg segd" role="group" aria-label="Tonart">
       <button data-key="C" aria-pressed="true">C-Dur</button>
       <button data-key="G" aria-pressed="false">G-Dur</button>
@@ -156,11 +174,11 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
     <span>Mikro</span><div id="meter"><i></i></div>
     <span>Ich höre: <span id="hear">–</span></span>
     <span id="score-ok">0 richtig</span>
-    <button class="btn" id="skip">Ton überspringen →</button>
+    <button class="btn" id="skip">Überspringen →</button>
     <span id="micmsg"></span>
   </div>
   <p class="hint hint-tv" style="margin-top:14px">Fernbedienung: Pfeiltasten wählen, OK drückt. Play/Pause-Taste = Start/Stopp, Zurückspulen = zum Anfang.</p>
-  <p class="hint hint-pc" style="margin-top:14px">Leertaste = Start/Stopp. Im Übungsmodus wartet der Strich, bis du den richtigen Ton spielst. Bei „Akkorde“ zeigt das Griffbrett den Griff für jeden Takt.</p>
+  <p class="hint hint-pc" style="margin-top:14px">Leertaste = Start/Stopp. Im Übungsmodus wartet der Strich, bis du den richtigen Ton spielst. Bei „Akkorde“ zeigt das Griffbrett den Griff, die Pfeile zeigen, wann du anschlägst. Mit Mikro wartet die App, bis der Akkord richtig klingt.</p>
 </section>
 
 <script>
@@ -198,13 +216,16 @@ const KEYS={
   C:{fr:FR,tr:p=>p,sig:0,label:'C-Dur',ch:['C','Em','C','Dm','Dm','G','G','C','C','Em','C','Dm','Dm','G','G','C','C','C','C','C','Dm','C','D','G','C','C','C','C','Dm','C','G','C']},
   G:{fr:FRG,tr:p=>TR[p],sig:1,label:'G-Dur',ch:['G','G','G','Em','C','D','D','G','G','G','G','Em','C','D','D','G','G','G','G','G','C','G','D','D','G','G','G','G','C','G','D','G']}};
 const TOTAL=128;
-let key='C',N=[],CH=[],CHS=[];
+let key='C',N=[],CH=[],CHS=[],STR=[],pat=2;
+const CCOL={C:'#d6402b',Dm:'#127c84',Em:'#1d7a4f',G:'#2459c9',D:'#d77a0d'};
 try{if(localStorage.getItem('jb-key')==='G')key='G'}catch(e){}
 function buildData(){const K=KEYS[key];let t=0;
   N=MEL.map(([d,p0,l],i)=>{const p=K.tr(p0),sh=p[1]==='#'?1:0,oc=+p[p.length-1];
     const n={i,start:t/2,dur:d/2,p,lyr:l.replace(/-$/,''),hy:l.endsWith('-'),midi:12*(oc+1)+SEMI[p[0]]+sh,s:K.fr[p][0],f:K.fr[p][1],name:DE[p[0]]+(sh?'is':''),diat:LET.indexOf(p[0])+7*oc};t+=d;return n});
-  CH=K.ch;CHS=CH.map((c,b)=>{let k=b;while(k>0&&k!==16&&CH[k-1]===c)k--;return k}); // bar where the current chord starts
+  CH=K.ch;buildStrums();CHS=CH.map((c,b)=>{let k=b;while(k>0&&k!==16&&CH[k-1]===c)k--;return k}); // bar where the current chord starts
 }
+function buildStrums(){const at={1:[0],2:[0,2],4:[0,1,2,3]}[pat];STR=[];
+  for(let b=0;b<32;b++)for(const o of (b===31?[0]:at))STR.push({k:STR.length,start:b*4+o,chord:CH[b]})}
 buildData();
 const SECS={all:[0,128],verse:[0,64],chorus:[64,128]};
 // drums per bar (eighth grid)
@@ -229,6 +250,11 @@ function drawScore(){
     if(b<32)h+=`<text class="lbl" x="${x+4}" y="${ST-14}">${b+1}</text>`}
   h+=`<text class="reh" x="${X0+64*PPB+60}" y="${ST-14}">Refrain</text>`;
   CH.forEach((c,b)=>{if(CHS[b]===b)h+=`<text class="chd" id="c${b}" x="${X0+b*4*PPB+16}" y="${ST-24}">${c}</text>`});
+  h+='<g class="cblk">';
+  CH.forEach((c,b)=>{if(CHS[b]!==b)return;let e=b+1;while(e<32&&CHS[e]===b)e++;const x0=X0+b*4*PPB+3,x1=X0+e*4*PPB-3;
+    h+=`<rect x="${x0}" y="0" width="${x1-x0}" height="40" rx="8" fill="${CCOL[c]}"/><text class="cn" x="${x0+8}" y="14">${c}</text>`});
+  STR.forEach(t=>{const x=X0+t.start*PPB+16;h+=`<g class="sa" id="s${t.k}"><circle cx="${x}" cy="27" r="10"/><text x="${x}" y="32">↓</text></g>`});
+  h+='</g>';
   h+=`<line class="bar" x1="${X0+128*PPB-5}" x2="${X0+128*PPB-5}" y1="${ST}" y2="${SB}"/><rect x="${X0+128*PPB-2}" y="${ST}" width="5" height="40" fill="var(--line)"/>`;
   const beam=new Set();
   N.forEach((n,i)=>{const m=N[i+1];if(n.dur===.5&&m&&m.dur===.5&&n.start%1===0&&m.start===n.start+.5){beam.add(i);beam.add(i+1);n.bm=m}});
@@ -287,7 +313,7 @@ function showNote(i){
   const m=N[i+1];$('next').textContent=m?`Danach: ${m.name} · ${m.s}. Saite, ${m.f===0?'leer':m.f+'. Bund'}`:'Letzter Ton!';
   melFB(n,m);
 }
-let shownC=-1;
+let shownC=-1,shownS=-1;
 function showChord(b){if(b===shownC)return;shownC=b;const c=CH[b];
   document.querySelectorAll('.chd.on').forEach(e=>e.classList.remove('on'));$('c'+CHS[b])?.classList.add('on');
   $('chdline').textContent=what==='mel'?'Akkord: '+c:'';
@@ -314,11 +340,11 @@ const strum=(c,a)=>{let k=0;CHD[c].f.forEach((f,i)=>{if(f>=0)pluck(TUNE[i]+f,a+.
 const click=(a,acc)=>tone(a,acc?1500:1000,acc?1500:1000,.05,.35,'square');
 
 // ---------- transport
-let what='mel',mode='play',sec='all',playing=false,beat=0,anchorBeat=0,anchorT=0,spb=60/80,evs=[],ep=0,countEnd=0,waitIdx=0,okCount=0,timer=null;
+let WT=[],what='mel',mode='play',sec='all',playing=false,beat=0,anchorBeat=0,anchorT=0,spb=60/80,evs=[],ep=0,countEnd=0,waitIdx=0,okCount=0,timer=null;
 const opt=id=>$(id).checked;
 function buildEvents(){const [a,b]=SECS[sec];evs=[];
   if(mode==='play'){if(opt('o-mel'))N.forEach(n=>{if(n.start>=a&&n.start<b)evs.push([n.start,'m',n])});
-    if(opt('o-chd'))for(let x=a;x<b;x+=2)evs.push([x,'k',CH[Math.floor(x/4)]]);
+    if(opt('o-chd'))STR.forEach(t=>{if(t.start>=a&&t.start<b)evs.push([t.start,'k',t.chord])});
     if(opt('o-drum'))DR.forEach(([x,k])=>{if(x>=a&&x<b)evs.push([x,'d',k])});}
   if(opt('o-click')&&mode==='play')for(let x=a;x<b;x++)evs.push([x,'c',x%4===0]);
   evs.sort((p,q)=>p[0]-q[0]);ep=evs.findIndex(e=>e[0]>=beat-1e-6);if(ep<0)ep=evs.length}
@@ -326,18 +352,19 @@ const beatAt=tm=>anchorBeat+(tm-anchorT)/spb;
 const timeAt=b=>anchorT+(b-anchorBeat)*spb;
 function schedule(){if(!playing)return;const now=ctx.currentTime;
   while(ep<evs.length){const e=evs[ep],tm=timeAt(e[0]);if(tm>now+.15)break;
-    if(mode==='wait'&&e[0]>N[waitIdx]?.start)break;
+    if(mode==='wait'&&e[0]>WT[waitIdx]?.start)break;
     if(tm>=now-.02){if(e[1]==='m')pluck(e[2].midi,tm,e[2].dur*spb);else if(e[1]==='d')DRUM[e[2]](tm);else if(e[1]==='k')strum(e[2],tm);else click(tm,e[2])}ep++}}
 function start(){ac();ctx.resume();const [a,b]=SECS[sec];if(beat<a||beat>=b)beat=a;
   playing=true;$('play').textContent='⏸ Stopp';
   const lead=.12,ci=opt('o-count')?4:0;anchorBeat=beat;anchorT=ctx.currentTime+lead+ci*spb;countEnd=anchorT;
   for(let k=0;k<ci;k++)click(ctx.currentTime+lead+k*spb,k===0);
-  if(mode==='wait'){waitIdx=N.findIndex(n=>n.start>=beat-1e-6);if(waitIdx<0)waitIdx=0;startMic()}
+  if(mode==='wait'){WT=what==='chd'?STR.map(t=>({start:t.start,el:'s'+t.k,chord:t.chord})):N.map(n=>({start:n.start,el:'n'+n.i,midi:n.midi}));
+    waitIdx=WT.findIndex(t=>t.start>=beat-1e-6);if(waitIdx<0)waitIdx=0;startMic()}
   buildEvents();clearInterval(timer);timer=setInterval(schedule,25)}
 function stop(){playing=false;clearInterval(timer);$('play').textContent='▶ Start';$('count').classList.remove('show');if(ctx)master.gain.setTargetAtTime(0,ctx.currentTime,.03),setTimeout(()=>{if(master)master.gain.value=.8;},120)}
 function rewind(){const r=playing;if(r)stop();beat=SECS[sec][0];clearOk();if(r)setTimeout(start,150);frame(true)}
-function clearOk(){okCount=0;$('score-ok').textContent='0 richtig';document.querySelectorAll('.nt.ok').forEach(e=>e.classList.remove('ok'))}
-function accept(){const n=N[waitIdx];if(!n)return;$('n'+waitIdx).classList.add('ok');okCount++;$('score-ok').textContent=okCount+' richtig';
+function clearOk(){okCount=0;$('score-ok').textContent='0 richtig';document.querySelectorAll('.nt.ok,.sa.ok').forEach(e=>e.classList.remove('ok'))}
+function accept(){const n=WT[waitIdx];if(!n)return;$(n.el)?.classList.add('ok');okCount++;$('score-ok').textContent=okCount+' richtig';
   const now=ctx.currentTime;if(beatAt(now)<n.start||waiting){anchorBeat=n.start;anchorT=now}
   waiting=false;waitIdx++;buildEvents()}
 let waiting=false;
@@ -345,34 +372,55 @@ function frame(force){
   if(playing){const now=ctx.currentTime;
     if(now<countEnd){const k=Math.floor((now-(countEnd-4*spb))/spb)+1;$('count').textContent=k>0?k:'';$('count').classList.toggle('show',k>0)}else $('count').classList.remove('show');
     let b=beatAt(Math.max(now,countEnd));
-    if(mode==='wait'){const n=N[waitIdx];if(n&&b>=n.start){b=n.start;if(!waiting){waiting=true}}}
+    if(mode==='wait'){const n=WT[waitIdx];if(n&&b>=n.start){b=n.start;if(!waiting){waiting=true}}}
     beat=b;const [a,e]=SECS[sec];
-    if(beat>=e||(mode==='wait'&&waitIdx>=N.length)){if(opt('o-loop')){beat=a;clearOk();stop();setTimeout(start,200)}else{stop();beat=a}}}
+    if(beat>=e||(mode==='wait'&&waitIdx>=WT.length)){if(opt('o-loop')){beat=a;clearOk();stop();setTimeout(start,200)}else{stop();beat=a}}}
   const W=$('stage').clientWidth,ph=Math.max(110,W*.3);$('head').style.left=(ph-16)+'px';
   svg.style.transform=`translateX(${ph-(X0+beat*PPB+16)}px)`;
-  let i=mode==='wait'&&playing?waitIdx:N.findIndex(n=>beat<n.start+n.dur-1e-6);if(i<0)i=N.length-1;
+  let i=mode==='wait'&&playing&&what==='mel'?waitIdx:N.findIndex(n=>beat<n.start+n.dur-1e-6);if(i<0)i=N.length-1;
   showNote(Math.min(i,N.length-1));
   showChord(Math.min(31,Math.max(0,Math.floor(beat/4+1e-6))));
+  if(what==='chd'){let k=-1;for(const t of STR){if(t.start<=beat+.01)k=t.k;else break}
+    if(mode==='wait'&&playing&&WT[waitIdx])k=STR.findIndex(t=>t.start===WT[waitIdx].start);
+    if(k!==shownS){$('s'+shownS)?.classList.remove('on');$('s'+k)?.classList.add('on');shownS=k}}
   if(!force)requestAnimationFrame(()=>frame())}
 
 // ---------- microphone + pitch detection
-let an=null,micOn=false,buf=null,env=0,armed=true,stable=0;
+let an=null,spec=null,micOn=false,buf=null,env=0,armed=true,stable=0;
 async function startMic(){if(micOn)return;$('micmsg').textContent='';
   try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    const src=ctx.createMediaStreamSource(st);an=ctx.createAnalyser();an.fftSize=4096;src.connect(an);buf=new Float32Array(an.fftSize);micOn=true;listen()}
-  catch(e){$('micmsg').textContent='Kein Mikro verfügbar. Mit „Ton überspringen“ geht es trotzdem weiter.'}}
+    const src=ctx.createMediaStreamSource(st);an=ctx.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=0;src.connect(an);buf=new Float32Array(an.fftSize);spec=new Float32Array(an.frequencyBinCount);micOn=true;listen()}
+  catch(e){$('micmsg').textContent='Kein Mikro verfügbar. Mit „Überspringen“ geht es trotzdem weiter.'}}
 function detect(){an.getFloatTimeDomainData(buf);let r=0;for(const v of buf)r+=v*v;r=Math.sqrt(r/buf.length);
-  if(r<.008)return[r,0];const sr=ctx.sampleRate,lo=Math.floor(sr/1100),hi=Math.floor(sr/70),n=buf.length/2;let best=0,bl=-1;const c=[];
+  if(r<.008)return[r,0];const sr=ctx.sampleRate,lo=Math.floor(sr/1100),hi=Math.floor(sr/70),n=2048;let best=0,bl=-1;const c=[];
   for(let l=lo;l<=hi;l++){let s=0;for(let i=0;i<n;i++)s+=buf[i]*buf[i+l];c[l]=s;if(s>best){best=s;bl=l}}
   let e0=0;for(let i=0;i<n;i++)e0+=buf[i]*buf[i];if(bl<0||best<.3*e0)return[r,0];
   for(let l=lo;l<=hi;l++)if(c[l]>.9*best){bl=l;break}
   const a=c[bl-1]||0,b=c[bl],d=c[bl+1]||0,sh=(a-d)/(2*(a-2*b+d)||1);return[r,sr/(bl+sh)]}
-function listen(){if(!micOn)return;const [r,f]=detect();
+const PCS={C:[0,4,7],Dm:[2,5,9],Em:[4,7,11],F:[5,9,0],G:[7,11,2],Am:[9,0,4],D:[2,6,9],E:[4,8,11],A:[9,1,4],Bm:[11,2,6]};
+function chroma(){an.getFloatFrequencyData(spec);const bw=ctx.sampleRate/an.fftSize,lo=Math.ceil(75/bw),hi=Math.floor(1000/bw),X=[];let mx=0;
+  for(let i=lo-1;i<=hi+1;i++){X[i]=10**(spec[i]/20)||0;if(i>=lo&&i<=hi)mx=Math.max(mx,X[i])}
+  const pk=[];for(let i=lo+1;i<hi;i++)if(X[i]>X[i-1]&&X[i]>=X[i+1]&&X[i]>mx*.05)pk.push([i*bw,X[i]]);
+  const c=new Array(12).fill(0);
+  for(const [f,m] of pk){let harm=false;for(const [g] of pk){if(g>=f*.9)continue;const r=f/g,n=Math.round(r);if([3,5,6,7].includes(n)&&Math.abs(r-n)<.03*n){harm=true;break}}
+    if(!harm)c[((Math.round(12*Math.log2(f/440)+69))%12+12)%12]+=m}
+  const nm=Math.hypot(...c);return nm>0?c.map(v=>v/nm):null}
+function detectChord(){const c=chroma();if(!c)return null;let best=null,bs=0,second=0;
+  for(const [k,pcs] of Object.entries(PCS)){const sc=pcs.reduce((s,p)=>s+c[p],0)/Math.sqrt(3);if(sc>bs){second=bs;bs=sc;best=k}else if(sc>second)second=sc}
+  return bs>.65&&bs-second>.015?best:null}
+function listen(){if(!micOn)return;
+  if(what==='chd'){let r=0;an.getFloatTimeDomainData(buf);for(let i=0;i<2048;i++)r+=buf[i]*buf[i];r=Math.sqrt(r/2048);
+    $('meter').firstElementChild.style.width=Math.min(100,r*600)+'%';
+    if(r>env*1.7&&r>.02)armed=true;env=env*.9+r*.1;if(r<.01)armed=true;
+    const ch=r>.012?detectChord():null;$('hear').textContent=ch||'–';const n=WT[waitIdx];
+    if(playing&&mode==='wait'&&n&&n.chord&&armed&&ch===n.chord&&beatAt(ctx.currentTime)>n.start-.75){if(++stable>=3){stable=0;armed=false;accept()}}else if(ch!==n?.chord)stable=0;
+    requestAnimationFrame(listen);return}
+  const [r,f]=detect();
   $('meter').firstElementChild.style.width=Math.min(100,r*600)+'%';
   if(r>env*1.7&&r>.02)armed=true;env=env*.9+r*.1;if(r<.01)armed=true;
   if(f){const m=69+12*Math.log2(f/440),mr=Math.round(m),nm=['C','Cis','D','Dis','E','F','Fis','G','Gis','A','B','H'][(mr%12+12)%12];$('hear').textContent=nm;
-    const n=N[waitIdx];
-    if(playing&&mode==='wait'&&n&&armed&&Math.abs(m-mr)<.4&&(mr-n.midi)%12===0&&beatAt(ctx.currentTime)>n.start-.75){if(++stable>=3){stable=0;armed=false;accept()}}else stable=0}
+    const n=WT[waitIdx];
+    if(playing&&mode==='wait'&&n&&n.midi&&armed&&Math.abs(m-mr)<.4&&(mr-n.midi)%12===0&&beatAt(ctx.currentTime)>n.start-.75){if(++stable>=3){stable=0;armed=false;accept()}}else stable=0}
   else{$('hear').textContent='–';stable=0}
   requestAnimationFrame(listen)}
 
@@ -385,13 +433,15 @@ document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{document.query
 ['o-mel','o-chd','o-drum','o-click'].forEach(id=>$(id).onchange=()=>{if(playing)buildEvents()});
 function setMode(m){mode=m;$('m-play').setAttribute('aria-pressed',m==='play');$('m-wait').setAttribute('aria-pressed',m==='wait');document.body.classList.toggle('wait',m==='wait');stop();clearOk();waiting=false;frame(true)}
 function setWhat(w){what=w;$('u-mel').setAttribute('aria-pressed',w==='mel');$('u-chd').setAttribute('aria-pressed',w==='chd');
-  $('m-wait').disabled=w==='chd';$('m-wait').title=w==='chd'?'Das Mikro erkennt nur einzelne Töne, keine Akkorde':'';
-  if(w==='chd'){if(mode==='wait')setMode('play');$('o-chd').checked=true}else $('o-chd').checked=false;
+  if(playing)stop();document.body.classList.toggle('chdmode',w==='chd');clearOk();
+  $('o-chd').checked=w==='chd';
   if(playing)buildEvents();shown=-1;shownC=-1;frame(true)}
 function setKey(k){if(playing)stop();key=k;try{localStorage.setItem('jb-key',k)}catch(e){}
   document.querySelectorAll('[data-key]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.key===k));$('keylbl').textContent=KEYS[k].label;
   buildData();drawScore();shown=-1;shownC=-1;clearOk();beat=SECS[sec][0];frame(true)}
 document.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>setKey(b.dataset.key));
+document.querySelectorAll('[data-pat]').forEach(b=>b.onclick=()=>{if(playing)stop();pat=+b.dataset.pat;document.querySelectorAll('[data-pat]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  buildStrums();drawScore();shownS=-1;clearOk();frame(true)});
 $('u-mel').onclick=()=>setWhat('mel');$('u-chd').onclick=()=>setWhat('chd');
 $('m-play').onclick=()=>setMode('play');$('m-wait').onclick=()=>setMode('wait');
 const TV=location.hash==='#tv';

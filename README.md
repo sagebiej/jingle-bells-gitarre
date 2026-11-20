@@ -5,7 +5,8 @@ Kleine Übungs-App im Browser: Noten und TAB laufen an einem Spielstrich vorbei,
 **Zur App:** https://sagebiej.github.io/jingle-bells-gitarre/
 
 - Melodie in C-Dur (Saiten 1 bis 3) oder G-Dur (Saiten 1 bis 4), erste Lage
-- Akkorde C, Dm, Em, G und D mit Griffbildern, Übungsmodus „Akkorde“ und Akkordklang
+- Akkorde wie bei Simply Guitar: farbige Akkordspur mit Anschlagpfeilen (1×, 2× oder 4× pro Takt), Griffbild, Akkordklang und Akkorderkennung per Mikro
+- Akkorde in C-Dur: C, Dm, Em, G, D; in G-Dur: G, C, D, Em
 - Tempo 40 bis 140, Einzähler, Metronom, Schlagzeugbegleitung
 - Strophe, Refrain oder alles, auf Wunsch in Schleife
 - Übungsmodus mit Mikrofon: Die App wartet, bis der richtige Ton gespielt wird
