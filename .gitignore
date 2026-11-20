@@ -13,3 +13,9 @@
 *.knit.md
 *.mscz
 output/
+*.apk
+*.idsig
+*.keystore
+firetv/build/
+firetv/res/
+firetv/assets/
