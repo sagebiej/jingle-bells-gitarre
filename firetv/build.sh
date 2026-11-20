@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build the Fire TV app (WebView wrapper around ../index.html) with the Ubuntu android-sdk packages.
 #   ./build.sh            build jinglebells.apk
-#   ./build.sh install    also install it on the Cube (CUBE=ip:port, default 192.168.1.31:5555)
+#   ./build.sh install    also install it on the Cube (CUBE=ip:port, default 192.168.1.20:5555)
 set -e
 cd "$(dirname "$0")"
 SDK=/usr/lib/android-sdk
@@ -23,7 +23,7 @@ fi
 apksigner sign --ks "$KS" --ks-pass pass:jinglebells --out jinglebells.apk build/aligned.apk
 echo "built $PWD/jinglebells.apk"
 if [ "$1" = install ]; then
-    CUBE=${CUBE:-192.168.1.31:5555}
+    CUBE=${CUBE:-192.168.1.20:5555}
     adb connect "$CUBE" >/dev/null
     adb -s "$CUBE" install -r jinglebells.apk
 fi
