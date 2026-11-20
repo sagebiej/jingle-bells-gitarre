@@ -1,0 +1,15 @@
+*.rds
+*.RDS
+*.qs
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.ngd
+*.pdf
+*.png
+*.html
+!index.html
+*.knit.md
+*.mscz
+output/
