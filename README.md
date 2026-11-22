@@ -15,6 +15,10 @@ Alles steckt in einer einzigen Datei, `index.html`, ohne Build-Schritt. Lokal ö
 
 Melodie: James Lord Pierpont (1857), gemeinfrei.
 
+## Noten lernen
+
+`noten.html` ist ein Übungsquiz zu den 9 Tönen der Melodie: Notenname, Note im Notensystem und Tab. Leicht: 2 Angaben stehen da, die dritte wird ergänzt. Schwer: nur eine steht da. Falsche Aufgaben kommen am Ende nochmal. Link oben in der Mitspiel-Seite.
+
 ## Fire TV
 
 `firetv/` baut eine kleine Android-App für den Fire TV (Cube), die `index.html` mitbringt und im Fernbedienungsmodus (`index.html#tv`) öffnet: Pfeiltasten wählen, OK drückt, Play/Pause startet und stoppt. Bauen mit den Ubuntu-Paketen des Android SDK:

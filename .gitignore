@@ -10,6 +10,7 @@
 *.png
 *.html
 !index.html
+!noten.html
 *.knit.md
 *.mscz
 output/

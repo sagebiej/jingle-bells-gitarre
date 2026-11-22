@@ -85,7 +85,9 @@ input[type=range]{accent-color:var(--red);width:180px;height:32px}
 .tv .card{padding:12px 18px}
 .tv #fb{max-height:190px}
 .tv body{overflow:hidden}
-.tv #modeseg,.tv .hint-pc{display:none}
+.tv #modeseg,.tv .hint-pc,.tv .nlink{display:none}
+.nlink{color:#fff;font-weight:800;text-decoration:none;display:inline-block;margin-top:2px}
+.nlink:hover{text-decoration:underline}
 .tv .hint-tv{display:block}
 .hint-tv{display:none}
 .tv :focus{outline:5px solid var(--gold)!important;outline-offset:3px}
@@ -150,7 +152,7 @@ header.band{padding-top:max(18px,calc(env(safe-area-inset-top) + 6px))}
 </head>
 <body>
 <header class="band">
-  <div><h1>Jingle Bells</h1><p>Gitarre · <span id="keylbl">C-Dur</span> · Melodie und Akkorde</p></div>
+  <div><h1>Jingle Bells</h1><p>Gitarre · <span id="keylbl">C-Dur</span> · Melodie und Akkorde</p><a class="nlink" href="noten.html">Noten lernen →</a></div>
   <div class="seg" role="group" aria-label="Was üben">
     <button id="u-mel" aria-pressed="true">Melodie</button>
     <button id="u-chd" aria-pressed="false">Akkorde</button>
