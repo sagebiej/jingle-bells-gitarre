@@ -19,6 +19,10 @@ Melodie: James Lord Pierpont (1857), gemeinfrei.
 
 `noten.html` ist ein Übungsquiz zu den 9 Tönen der Melodie (wahlweise 13 mit tiefem C, D, E, F auf A- und D-Saite): Notenname, Note im Notensystem und Tab. Leicht: 2 Angaben stehen da, die dritte wird ergänzt. Schwer: nur eine steht da. Falsche Aufgaben kommen am Ende nochmal. Link oben in der Mitspiel-Seite.
 
+## Tonleiter
+
+`tonleiter.html` übt die Reihenfolge der Notennamen: Aufsagen (C aufwärts, abwärts, ab jedem Ton, auch rückwärts), Lücken füllen und „Was kommt vor/nach …?“. Richtige Töne erklingen und erscheinen im Notensystem; die Halbtonschritte E–F und H–C sind markiert.
+
 ## Fire TV
 
 `firetv/` baut eine kleine Android-App für den Fire TV (Cube), die `index.html` mitbringt und im Fernbedienungsmodus (`index.html#tv`) öffnet: Pfeiltasten wählen, OK drückt, Play/Pause startet und stoppt. Bauen mit den Ubuntu-Paketen des Android SDK:

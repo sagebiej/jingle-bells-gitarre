@@ -11,6 +11,7 @@
 *.html
 !index.html
 !noten.html
+!tonleiter.html
 *.knit.md
 *.mscz
 output/
