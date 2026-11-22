@@ -23,6 +23,7 @@ header{background:var(--red);color:#fff;display:flex;flex-wrap:wrap;gap:10px 20p
 h1{font:600 clamp(26px,5vw,40px)/1.05 Fredoka,system-ui,sans-serif;margin:0}
 header a{color:#fff;font-weight:800;text-decoration:none;opacity:.92}
 header a:hover{text-decoration:underline}
+.segs{display:flex;flex-wrap:wrap;gap:8px}
 .seg{display:inline-flex;background:rgba(255,255,255,.16);border-radius:999px;padding:4px;gap:4px}
 .seg button{border:0;background:transparent;color:inherit;font:700 15px Nunito,sans-serif;padding:8px 16px;border-radius:999px;min-height:42px;cursor:pointer}
 .seg button[aria-pressed=true]{background:#fff;color:#a00d25}
@@ -72,9 +73,15 @@ main{max-width:760px;margin:0 auto}
 <body>
 <header class="band">
   <div><h1>Noten lernen</h1><a href="./">← Zurück zum Mitspielen</a></div>
+  <div class="segs">
   <div class="seg" role="group" aria-label="Schwierigkeit">
     <button data-lv="1" aria-pressed="true">Leicht</button>
     <button data-lv="2" aria-pressed="false">Schwer</button>
+  </div>
+  <div class="seg" role="group" aria-label="Welche Töne">
+    <button data-more="0" aria-pressed="true">9 Töne</button>
+    <button data-more="1" aria-pressed="false">13 Töne</button>
+  </div>
   </div>
 </header>
 
@@ -89,7 +96,7 @@ main{max-width:760px;margin:0 auto}
     </div>
     <div class="card">
       <div class="lbl"><span>Noten und Tab</span><span class="res" id="rSv"></span></div>
-      <svg id="sv" viewBox="0 0 400 278" aria-label="Notensystem und Tabulatur"></svg>
+      <svg id="sv" viewBox="0 0 400 286" aria-label="Notensystem und Tabulatur"></svg>
       <div id="frets"><span style="font-weight:800">Bund:</span></div>
       <p class="hint" id="svHint"></p>
     </div>
@@ -110,16 +117,20 @@ main{max-width:760px;margin:0 auto}
 <script>
 // The 9 pitches of the Jingle Bells melody in C major with the guitar positions used in the play-along app.
 // d = written staff step above the bottom line (E4 = 0); guitar is written an octave above how it sounds.
-const P=[
+const ALL=[
+  {n:'tiefes C',midi:48,d:-2,s:5,f:3,x:1},{n:'tiefes D',midi:50,d:-1,s:4,f:0,x:1},
+  {n:'tiefes E',midi:52,d:0,s:4,f:2,x:1},{n:'tiefes F',midi:53,d:1,s:4,f:3,x:1},
   {n:'tiefes G',midi:55,d:2,s:3,f:0},{n:'tiefes A',midi:57,d:3,s:3,f:2},{n:'H',midi:59,d:4,s:2,f:0},
   {n:'C',midi:60,d:5,s:2,f:1},{n:'D',midi:62,d:6,s:2,f:3},{n:'E',midi:64,d:7,s:1,f:0},
   {n:'F',midi:65,d:8,s:1,f:1},{n:'hohes G',midi:67,d:9,s:1,f:3},{n:'hohes A',midi:69,d:10,s:1,f:5}];
+// x: extra notes below the melody range (D and A string), only in the "more notes" set
+let more=localStorage.getItem('jb-noten-more')==='1',P=ALL.filter(p=>more||!p.x);
 const KIND=['name','staff','tab'];
 const $=id=>document.getElementById(id);
 let level=+(localStorage.getItem('jb-noten-lv')||1),queue=[],idx=0,total=0,firstOk=0,cur=null,ans={},checked=false,selString=0;
 
 // ---------- drawing
-const W=400,G=14,BOT=110,STEP=G/2,TT=176,TG=18,NX=250,DMIN=-1,DMAX=11;
+const W=400,G=14,BOT=110,STEP=G/2,TT=184,TG=18,NX=250,DMIN=-3,DMAX=11;
 const yOf=d=>BOT-d*STEP;
 function noteSvg(d,cls,X=NX){let h='';const y=yOf(d);
   for(let l=-2;l>=d;l-=2)h+=`<line x1="${X-17}" x2="${X+17}" y1="${yOf(l)}" y2="${yOf(l)}" stroke="var(--line)" stroke-width="1.6"/>`;
@@ -128,7 +139,7 @@ function noteSvg(d,cls,X=NX){let h='';const y=yOf(d);
 function fretSvg(s,f,cls){const y=TT+(s-1)*TG;return `<g><rect class="fretbg" x="${NX-13}" y="${y-12}" width="26" height="24"/><text class="fretn ${cls}" x="${NX}" y="${y+7}">${f}</text></g>`}
 function draw(ghost){const t=cur.p,st=missing('staff'),tb=missing('tab');let h='';
   h+=`<g class="st">${[0,1,2,3,4].map(k=>`<line x1="10" x2="${W-10}" y1="${BOT-k*G}" y2="${BOT-k*G}"/>`).join('')}</g>`;
-  h+=`<text x="16" y="${BOT+12}" style="font:78px 'Noto Music',serif;fill:var(--ink)">𝄞</text><text x="41" y="${BOT+53}" text-anchor="middle" style="font:800 13px Nunito,sans-serif;fill:var(--ink)">8</text>`;
+  h+=`<text x="16" y="${BOT+12}" style="font:78px 'Noto Music',serif;fill:var(--ink)">𝄞</text><text x="41" y="${BOT+57}" text-anchor="middle" style="font:800 13px Nunito,sans-serif;fill:var(--ink)">8</text>`;
   h+=`<g class="tb">${[0,1,2,3,4,5].map(k=>`<line x1="10" x2="${W-10}" y1="${TT+k*TG}" y2="${TT+k*TG}"/>`).join('')}</g>`;
   h+=['T','A','B'].map((c,k)=>`<text x="22" y="${TT+26+k*24}" style="font:800 22px Nunito;fill:var(--ink)">${c}</text>`).join('');
   // staff note: given, answered, ghost while hovering, solution after a wrong answer
@@ -147,7 +158,10 @@ function draw(ghost){const t=cur.p,st=missing('staff'),tb=missing('tab');let h='
 
 // ---------- task flow
 function missing(k){return cur&&cur.miss.includes(k)}
-function build(){const items=[];for(const p of P){if(level===1)for(const k of KIND)items.push({p,miss:[k]});else for(const k of KIND)items.push({p,miss:KIND.filter(x=>x!==k)})}
+function build(){P=ALL.filter(p=>more||!p.x);const items=[];
+  // 9 notes: every note in all 3 variants (27 tasks); 13 notes: 2 random variants each (26 tasks)
+  for(const p of P){const ks=more?KIND.slice().sort(()=>Math.random()-.5).slice(0,2):KIND;
+    for(const k of ks)items.push({p,miss:level===1?[k]:KIND.filter(x=>x!==k)})}
   for(let tries=0;tries<200;tries++){items.sort(()=>Math.random()-.5);if(items.every((x,i)=>!i||x.p!==items[i-1].p))break}
   queue=items;idx=0;total=items.length;firstOk=0;document.body.classList.remove('fin');show()}
 function show(){cur=queue[idx];ans={};checked=false;selString=0;
@@ -200,6 +214,9 @@ $('hear').onclick=()=>cur&&play(cur.p.midi);
 document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=+b.dataset.lv;localStorage.setItem('jb-noten-lv',level);
   document.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));build()});
 document.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.lv===level));
+document.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{more=b.dataset.more==='1';localStorage.setItem('jb-noten-more',more?'1':'0');
+  document.querySelectorAll('[data-more]').forEach(x=>x.setAttribute('aria-pressed',x===b));build()});
+document.querySelectorAll('[data-more]').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.more==='1')===more));
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('go').disabled){e.preventDefault();$('go').click()}});
 
 // ---------- sound: a plucked string (Karplus-Strong), same as in the play-along page

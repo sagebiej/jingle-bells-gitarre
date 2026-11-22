@@ -17,7 +17,7 @@ Melodie: James Lord Pierpont (1857), gemeinfrei.
 
 ## Noten lernen
 
-`noten.html` ist ein Übungsquiz zu den 9 Tönen der Melodie: Notenname, Note im Notensystem und Tab. Leicht: 2 Angaben stehen da, die dritte wird ergänzt. Schwer: nur eine steht da. Falsche Aufgaben kommen am Ende nochmal. Link oben in der Mitspiel-Seite.
+`noten.html` ist ein Übungsquiz zu den 9 Tönen der Melodie (wahlweise 13 mit tiefem C, D, E, F auf A- und D-Saite): Notenname, Note im Notensystem und Tab. Leicht: 2 Angaben stehen da, die dritte wird ergänzt. Schwer: nur eine steht da. Falsche Aufgaben kommen am Ende nochmal. Link oben in der Mitspiel-Seite.
 
 ## Fire TV
 
