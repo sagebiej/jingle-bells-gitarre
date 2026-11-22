@@ -25,7 +25,7 @@ Melodie: James Lord Pierpont (1857), gemeinfrei.
 
 ## Abschreiben
 
-`abschreiben.html` zeigt die Melodie Takt für Takt als Vorlage (Noten, Tab, Text). Darunter steht ein leeres Notensystem mit Tab. Man tippt die Noten ins System, im Tab die Saite und darunter die Bundzahl, und prüft den Takt. Bei „Schwer“ wählt man auch die Notenwerte. Der Fortschritt bleibt im Browser gespeichert.
+`abschreiben.html` ist ein leeres Notensystem mit Tab, Takt für Takt. Die Vorlage liest man vom gedruckten Melodie-Blatt ab; oben stehen nur Taktnummer und Liedtext, die Vorlage lässt sich bei Bedarf einblenden. Man tippt die Noten ins System, im Tab die Saite und darunter die Bundzahl, und prüft den Takt. Bei „Schwer“ wählt man auch die Notenwerte. Der Fortschritt bleibt im Browser gespeichert.
 
 ## Fire TV
 
