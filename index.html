@@ -401,7 +401,7 @@ function schedule(){if(!playing)return;const now=ctx.currentTime;
   while(ep<evs.length){const e=evs[ep],tm=timeAt(e[0]);if(tm>now+.15)break;
     if(mode==='wait'&&e[0]>WT[waitIdx]?.start)break;
     if(tm>=now-.02){if(e[1]==='m')pluck(e[2].midi,tm,e[2].dur*spb);else if(e[1]==='d')DRUM[e[2]](tm);else if(e[1]==='k')strum(e[2],tm);else click(tm,e[2])}ep++}}
-function start(){ac();ctx.resume();const [a,b]=SECS[sec];if(beat<a||beat>=b)beat=a;
+function start(){ac();ctx.resume();lastGot=null;const [a,b]=SECS[sec];if(beat<a||beat>=b)beat=a;
   playing=true;$('play').textContent='⏸ Stopp';
   const lead=.12,ci=opt('o-count')?4:0;anchorBeat=beat;anchorT=ctx.currentTime+lead+ci*spb;countEnd=anchorT;
   for(let k=0;k<ci;k++)click(ctx.currentTime+lead+k*spb,k===0);
@@ -433,17 +433,33 @@ function frame(force){
   if(!force)requestAnimationFrame(()=>frame())}
 
 // ---------- microphone + pitch detection
-let an=null,spec=null,micOn=false,buf=null,env=0,armed=true,stable=0;
+// A note counts once per pluck: it needs a fresh attack (level jump) after the last accepted note.
+// Speech is filtered out by periodicity, a pitch that holds still for ~100 ms, and a level that fades like a string.
+let an=null,spec=null,micOn=false,buf=null,stable=0;
+let lvHist=[],rising=false,lastOnset=-9,acceptedAt=-9,pitchHist=[],lastGot=null;
 async function startMic(){if(micOn)return;$('micmsg').textContent='';
   try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     const src=ctx.createMediaStreamSource(st);an=ctx.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=0;src.connect(an);buf=new Float32Array(an.fftSize);spec=new Float32Array(an.frequencyBinCount);micOn=true;listen()}
   catch(e){$('micmsg').textContent='Kein Mikro verfügbar. Mit „Überspringen“ geht es trotzdem weiter.'}}
-function detect(){an.getFloatTimeDomainData(buf);let r=0;for(const v of buf)r+=v*v;r=Math.sqrt(r/buf.length);
-  if(r<.008)return[r,0];const sr=ctx.sampleRate,lo=Math.floor(sr/1100),hi=Math.floor(sr/70),n=2048;let best=0,bl=-1;const c=[];
-  for(let l=lo;l<=hi;l++){let s=0;for(let i=0;i<n;i++)s+=buf[i]*buf[i+l];c[l]=s;if(s>best){best=s;bl=l}}
-  let e0=0;for(let i=0;i<n;i++)e0+=buf[i]*buf[i];if(bl<0||best<.3*e0)return[r,0];
-  for(let l=lo;l<=hi;l++)if(c[l]>.9*best){bl=l;break}
-  const a=c[bl-1]||0,b=c[bl],d=c[bl+1]||0,sh=(a-d)/(2*(a-2*b+d)||1);return[r,sr/(bl+sh)]}
+function level(){const L=buf.length;let s=0;for(let i=L-1024;i<L;i++)s+=buf[i]*buf[i];return Math.sqrt(s/1024)}
+function onsetStep(rs,now){lvHist.push(rs);if(lvHist.length>8)lvHist.shift();
+  const on=lvHist.length>=6&&rs>.012&&rs>1.5*Math.min(...lvHist.slice(0,-3));
+  if(on&&!rising){lastOnset=now;pitchHist=[]}rising=on}
+// the same note or chord again needs a new attack; a different one only needs to be heard clearly
+function fresh(now,win,want){return want!==lastGot||lastOnset>acceptedAt&&now-lastOnset<win}
+function pitch(){const L=buf.length,sr=ctx.sampleRate,lo=Math.floor(sr/1100),hi=Math.floor(sr/70),n=2048,o=L-n-hi;
+  let e0=0;for(let i=o;i<o+n;i++)e0+=buf[i]*buf[i];if(Math.sqrt(e0/n)<.008)return 0;
+  let best=0,bl=-1;const c=[];
+  let e1=0;for(let i=o+lo;i<o+lo+n;i++)e1+=buf[i]*buf[i];
+  for(let l=lo;l<=hi;l++){let s=0;for(let i=o;i<o+n;i++)s+=buf[i]*buf[i+l];c[l]=s/Math.sqrt(e0*e1||1);if(c[l]>best){best=c[l];bl=l}
+    const u=buf[o+l],w=buf[o+l+n]||0;e1+=w*w-u*u}
+  if(bl<0||best<.75)return 0;
+  for(let l=lo;l<=hi;l++)if(c[l]>.93*best&&c[l]>=c[l-1]&&c[l]>=c[l+1]){bl=l;break}
+  const a=c[bl-1]||0,b=c[bl],d=c[bl+1]||0,sh=(a-d)/(2*(a-2*b+d)||1);return sr/(bl+sh)}
+function steady(t){if(pitchHist.length<6)return false;const h=pitchHist.slice(-6),ms=h.map(p=>p[0]),mean=ms.reduce((x,y)=>x+y)/6;
+  if(Math.max(...ms)-Math.min(...ms)>.5)return false;
+  const d=mean-t,k=Math.round(d/12);if(Math.abs(k)>1||Math.abs(d-12*k)>.5)return false;
+  return h[5][1]<=.97*Math.max(...h.map(p=>p[1]))}
 const PCS={C:[0,4,7],Dm:[2,5,9],Em:[4,7,11],F:[5,9,0],G:[7,11,2],Am:[9,0,4],D:[2,6,9],E:[4,8,11],A:[9,1,4],Bm:[11,2,6]};
 function chroma(){an.getFloatFrequencyData(spec);const bw=ctx.sampleRate/an.fftSize,lo=Math.ceil(75/bw),hi=Math.floor(1000/bw),X=[];let mx=0;
   for(let i=lo-1;i<=hi+1;i++){X[i]=10**(spec[i]/20)||0;if(i>=lo&&i<=hi)mx=Math.max(mx,X[i])}
@@ -455,20 +471,19 @@ function chroma(){an.getFloatFrequencyData(spec);const bw=ctx.sampleRate/an.fftS
 function detectChord(){const c=chroma();if(!c)return null;let best=null,bs=0,second=0;
   for(const [k,pcs] of Object.entries(PCS)){const sc=pcs.reduce((s,p)=>s+c[p],0)/Math.sqrt(3);if(sc>bs){second=bs;bs=sc;best=k}else if(sc>second)second=sc}
   return bs>.65&&bs-second>.015?best:null}
-function listen(){if(!micOn)return;
-  if(what==='chd'){let r=0;an.getFloatTimeDomainData(buf);for(let i=0;i<2048;i++)r+=buf[i]*buf[i];r=Math.sqrt(r/2048);
-    $('meter').firstElementChild.style.width=Math.min(100,r*600)+'%';
-    if(r>env*1.7&&r>.02)armed=true;env=env*.9+r*.1;if(r<.01)armed=true;
-    const ch=r>.012?detectChord():null;$('hear').textContent=ch||'–';const n=WT[waitIdx];
-    if(playing&&mode==='wait'&&n&&n.chord&&armed&&ch===n.chord&&beatAt(ctx.currentTime)>n.start-.75){if(++stable>=3){stable=0;armed=false;accept()}}else if(ch!==n?.chord)stable=0;
+function listen(){if(!micOn)return;const now=ctx.currentTime;
+  an.getFloatTimeDomainData(buf);const rs=level();
+  $('meter').firstElementChild.style.width=Math.min(100,rs*600)+'%';
+  onsetStep(rs,now);
+  const n=WT[waitIdx],live=playing&&mode==='wait'&&n&&beatAt(now)>n.start-.75;
+  if(what==='chd'){const ch=rs>.012?detectChord():null;$('hear').textContent=ch||'–';
+    if(live&&n.chord&&ch===n.chord&&fresh(now,1,n.chord)){if(++stable>=3){stable=0;acceptedAt=now;lastGot=n.chord;accept()}}else if(ch!==n?.chord)stable=0;
     requestAnimationFrame(listen);return}
-  const [r,f]=detect();
-  $('meter').firstElementChild.style.width=Math.min(100,r*600)+'%';
-  if(r>env*1.7&&r>.02)armed=true;env=env*.9+r*.1;if(r<.01)armed=true;
-  if(f){const m=69+12*Math.log2(f/440),mr=Math.round(m),nm=['C','Cis','D','Dis','E','F','Fis','G','Gis','A','B','H'][(mr%12+12)%12];$('hear').textContent=nm;
-    const n=WT[waitIdx];
-    if(playing&&mode==='wait'&&n&&n.midi&&armed&&Math.abs(m-mr)<.4&&(mr-n.midi)%12===0&&beatAt(ctx.currentTime)>n.start-.75){if(++stable>=3){stable=0;armed=false;accept()}}else stable=0}
-  else{$('hear').textContent='–';stable=0}
+  const f=pitch();
+  if(f){const m=69+12*Math.log2(f/440),mr=Math.round(m);$('hear').textContent=['C','Cis','D','Dis','E','F','Fis','G','Gis','A','B','H'][(mr%12+12)%12];
+    pitchHist.push([m,rs]);if(pitchHist.length>12)pitchHist.shift();
+    if(live&&n.midi&&fresh(now,.8,n.midi)&&steady(n.midi)){acceptedAt=now;lastGot=n.midi;accept()}}
+  else{$('hear').textContent='–';pitchHist=[]}
   requestAnimationFrame(listen)}
 
 // ---------- controls
