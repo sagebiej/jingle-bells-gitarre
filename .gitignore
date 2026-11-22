@@ -12,6 +12,7 @@
 !index.html
 !noten.html
 !tonleiter.html
+!abschreiben.html
 *.knit.md
 *.mscz
 output/

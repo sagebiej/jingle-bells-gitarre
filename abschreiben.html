@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#c8102e">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Jingle Bells – Abschreiben</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+/* Copy the melody measure by measure: the original on top, an empty staff + TAB below.
+   Tap the staff to place a note, tap a TAB string and a fret button to write the fret. */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#121417);--ink:light-dark(#16181d,#eef0f3);--paper:light-dark(#ffffff,#1b1e24);--soft:light-dark(#f4f1ec,#22262d);--line:light-dark(#2a2d33,#c9ced6);--mute:light-dark(#6b6f78,#9aa1ac);--red:light-dark(#c8102e,#a80d27);--green:light-dark(#1d7a4f,#2fa36c);--gold:#f2b705;--goldsoft:light-dark(#fff3c4,#4a3b08);--bad:light-dark(#c8102e,#ff6b7f)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.band{padding:12px max(4vw,14px,env(safe-area-inset-right)) 12px max(4vw,14px,env(safe-area-inset-left))}
+header{background:var(--red);color:#fff;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between;padding-top:max(12px,calc(env(safe-area-inset-top) + 6px))!important}
+h1{font:600 clamp(26px,5vw,40px)/1.05 Fredoka,system-ui,sans-serif;margin:0}
+header a{color:#fff;font-weight:800;text-decoration:none;opacity:.92;margin-right:12px}
+header a:hover{text-decoration:underline}
+.seg{display:inline-flex;background:rgba(255,255,255,.16);border-radius:999px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;color:inherit;font:700 15px Nunito,sans-serif;padding:8px 16px;border-radius:999px;min-height:42px;cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:#a00d25}
+main{max-width:1200px;margin:0 auto}
+.prog{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--mute)}
+.prog .nav{border:0;background:var(--soft);color:var(--ink);font:800 20px Nunito;width:42px;height:42px;border-radius:50%;cursor:pointer}
+.prog .nav:disabled{opacity:.35;cursor:default}
+.bar{flex:1;height:10px;background:var(--soft);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+.cols{display:grid;gap:10px;margin-top:8px}
+@media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+.card{background:var(--soft);border-radius:16px;padding:8px 10px}
+.lbl{font:800 13px Nunito,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+.lbl .res{text-transform:none;letter-spacing:0;font-size:15px}
+.res.ok{color:var(--green)}.res.no{color:var(--bad)}
+svg.sheet{width:100%;max-width:560px;margin:0 auto;height:auto;display:block;background:var(--paper);border-radius:12px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.st line{stroke:var(--line);stroke-width:1.3}
+.tb line{stroke:var(--line);stroke-width:1.2;opacity:.75}
+.hit{fill:transparent;cursor:pointer}
+.col{fill:var(--goldsoft)}
+.slot{stroke:var(--mute);stroke-width:1.2;stroke-dasharray:3 5;opacity:.6}
+.fretn{font:800 20px Nunito,sans-serif;text-anchor:middle}
+.lyr{font:700 15px Nunito,sans-serif;text-anchor:middle;fill:var(--mute)}
+.keys{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.keys .k{border:2px solid transparent;border-radius:12px;background:var(--paper);color:var(--ink);font:700 18px Nunito,sans-serif;min-height:46px;min-width:46px;padding:0 8px;cursor:pointer}
+.keys .k[aria-pressed=true]{border-color:var(--gold);background:var(--goldsoft)}
+.keys .k:disabled{opacity:.4;cursor:default}
+.keys .t{font-weight:800;width:44px;flex:none}
+#frets .k,#durs .k{flex:1;max-width:60px;min-width:0;padding:0}
+.keys .mus{font-family:'Noto Music',serif;font-size:24px;line-height:1}
+.hint{color:var(--mute);font-size:14px;margin:6px 0 0}
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid color-mix(in srgb,var(--line) 20%,transparent);padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+#dock .in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.btn{border:0;border-radius:999px;font:800 18px Nunito,sans-serif;min-height:50px;padding:0 20px;cursor:pointer;background:var(--soft);color:var(--ink)}
+.btn.go{background:var(--green);color:#fff;flex:1;max-width:320px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.k:focus-visible,.seg button:focus-visible,.nav:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#score{margin-left:auto;font-weight:800;white-space:nowrap}
+#done{display:none;text-align:center;padding:30px 10px}
+#done h2{font:600 34px Fredoka,sans-serif;margin:0 0 8px;color:var(--green)}
+.fin #task{display:none}.fin #done{display:block}
+@media(max-width:700px){h1{font-size:26px}.seg button{padding:6px 12px;min-height:38px}}
+</style>
+</head>
+<body>
+<header class="band">
+  <h1>Abschreiben</h1>
+  <div class="seg" role="group" aria-label="Schwierigkeit">
+    <button data-lv="1" aria-pressed="true">Leicht</button>
+    <button data-lv="2" aria-pressed="false">Schwer</button>
+  </div>
+  <nav style="flex-basis:100%"><a href="./">← Mitspielen</a><a href="noten.html">Noten lernen</a><a href="tonleiter.html">Tonleiter</a></nav>
+</header>
+
+<main class="band">
+  <div class="prog"><button class="nav" id="prev" aria-label="Takt zurück">‹</button><span id="cnt">Takt 1 / 32</span><div class="bar"><i id="pbar"></i></div><button class="nav" id="nextM" aria-label="Takt vor">›</button></div>
+  <section id="task">
+  <div class="cols">
+    <div class="card">
+      <div class="lbl"><span>Vorlage</span><span id="vTxt"></span></div>
+      <svg class="sheet" id="sv0" viewBox="0 14 400 254" aria-label="Vorlage: Noten und Tab"></svg>
+    </div>
+    <div class="card">
+      <div class="lbl"><span>Dein Blatt</span><span class="res" id="res"></span></div>
+      <svg class="sheet" id="sv1" viewBox="0 14 400 254" aria-label="Dein Blatt: Noten und Tab"></svg>
+      <div class="keys" id="pitchKeys"><span class="t">Note:</span>
+        <button class="k" id="up" aria-label="Note höher">▲</button><button class="k" id="down" aria-label="Note tiefer">▼</button>
+        <button class="k" id="del" aria-label="Note löschen">✕</button>
+      </div>
+      <div class="keys" id="durs"></div>
+      <div class="keys" id="frets"><span class="t">Bund:</span></div>
+      <p class="hint" id="hint">Tippe ins Notensystem, wo die Note hingehört. Dann tippe im Tab auf die Saite und unten auf die Bundzahl.</p>
+    </div>
+  </div>
+  </section>
+  <section id="done">
+    <h2>Geschafft!</h2>
+    <p id="doneTxt"></p>
+    <button class="btn go" id="again">Von vorne</button>
+    <button class="btn" id="hearAll" style="margin-left:8px">🔊 Ganzes Lied</button>
+  </section>
+</main>
+
+<div id="dock"><div class="in">
+  <button class="btn go" id="go" disabled>Prüfen</button>
+  <button class="btn" id="hear" title="Takt der Vorlage anhören">🔊</button>
+  <span id="score"></span>
+</div></div>
+
+<script>
+// Melody of the guitar sheet ("2 Gitarre Melodie"): midi pitch, note value, lyric syllable.
+// w=4 beats, h.=3, h=2, q.=1.5, q=1, e=.5
+const SRC=[
+'55q|Dash- 64q|ing 62q|through 60q|the','55h.|snow, 55e|In 55e|a','55q|one- 64q|horse 62q|o- 60q|pen','57w|sleigh,',
+'57q|O\'er 65q|the 64q|fields 62q|we','59w|go,','67q|Laugh- 67q|ing 65q|all 62q|the','64w|way;',
+'55q|Bells 64q|on 62q|bob- 60q|tail','55w|ring,','55q|Mak- 64q|ing 62q|spir- 60q|its','57h.|bright, 57q|What',
+'57q|fun 65q|it 64q|is 62q|to','67q|ride 67q|and 67q|sing 67q|a','69q|sleigh- 67q|ing 65q|song 62q|to-','60h|night! 55h|Oh,',
+'64q|Jin- 64q|gle 64h|bells,','64q|jin- 64q|gle 64h|bells,','64q|jin- 67q|gle 60q.|all 62e|the','64w|way!',
+'65q|Oh, 65q|what 65q.|fun 65e|it','65q|is 64q|to 64q|ride 64e|in 64e|a','64q|one- 62q|horse 62q|o- 64q|pen','62h|sleigh, 67h|hey!',
+'64q|Jin- 64q|gle 64h|bells,','64q|jin- 64q|gle 64h|bells,','64q|jin- 67q|gle 60q.|all 62e|the','64w|way!',
+'65q|Oh, 65q|what 65q|fun 65q|it','65q|is 64q|to 64q|ride 64e|in 64e|a','67q|one- 67q|horse 65q|o- 62q|pen','60w|sleigh!'];
+// written staff step (bottom line E = 0) and TAB position (string 1 = high e) as in the play-along app
+const POS={55:[2,3,0],57:[3,3,2],59:[4,2,0],60:[5,2,1],62:[6,2,3],64:[7,1,0],65:[8,1,1],67:[9,1,3],69:[10,1,5]};
+const DUR={w:4,'h.':3,h:2,'q.':1.5,q:1,e:.5};
+const STEPMIDI=[52,53,55,57,59,60,62,64,65,67,69,71,72];   // d=0..12 (for sound while placing)
+const MEAS=SRC.map(r=>{let b=0;return r.split(' ').map(t=>{const[a,ly]=t.split('|'),midi=+a.slice(0,2),v=a.slice(2),[d,s,f]=POS[midi];
+  const n={midi,v,dur:DUR[v],beat:b,d,s,f,ly};b+=n.dur;return n})});
+const $=id=>document.getElementById(id);
+let level=+(localStorage.getItem('jb-ab-lv')||1),m=+(localStorage.getItem('jb-ab-m')||0),solved=new Set(JSON.parse(localStorage.getItem('jb-ab-ok')||'[]'));
+let ans=[],sel=0,res=null,ok=false,tries=0,firstOk=+(localStorage.getItem('jb-ab-first')||0);
+
+// ---------- drawing
+const W=400,G=14,BOT=110,STEP=G/2,TT=172,TG=18,DMIN=-3,DMAX=12,X0=102,BEAT=68;
+const yOf=d=>BOT-d*STEP, xOf=n=>X0+n.beat*BEAT;
+function staffBase(first){let h=`<g class="st">${[0,1,2,3,4].map(k=>`<line x1="8" x2="${W-8}" y1="${BOT-k*G}" y2="${BOT-k*G}"/>`).join('')}</g>`;
+  h+=`<line x1="${W-8}" x2="${W-8}" y1="${BOT-4*G}" y2="${BOT}" stroke="var(--line)" stroke-width="1.6"/>`;
+  h+=`<text x="12" y="${BOT+12}" style="font:78px 'Noto Music',serif;fill:var(--ink)">𝄞</text><text x="37" y="${BOT+53}" text-anchor="middle" style="font:800 12px Nunito,sans-serif;fill:var(--ink)">8</text>`;
+  if(first)h+=`<text x="76" y="${BOT-2*G-3}" text-anchor="middle" style="font:800 30px Fredoka,serif;fill:var(--ink)">4</text><text x="76" y="${BOT-3}" text-anchor="middle" style="font:800 30px Fredoka,serif;fill:var(--ink)">4</text>`;
+  h+=`<g class="tb">${[0,1,2,3,4,5].map(k=>`<line x1="8" x2="${W-8}" y1="${TT+k*TG}" y2="${TT+k*TG}"/>`).join('')}</g>`;
+  h+=`<line x1="${W-8}" x2="${W-8}" y1="${TT}" y2="${TT+5*TG}" stroke="var(--line)" stroke-width="1.4"/>`;
+  h+=['T','A','B'].map((c,k)=>`<text x="20" y="${TT+26+k*24}" style="font:800 22px Nunito;fill:var(--ink)">${c}</text>`).join('');
+  return h}
+const up=d=>d<4;   // stem up below the middle line
+// one note: head, ledger lines, stem, flag, dot. v=null draws a bare head (value not chosen yet)
+function noteSvg(x,d,v,col,beamed){const y=yOf(d),c=col||'var(--ink)';let h='';
+  for(let l=-2;l>=d;l-=2)h+=`<line x1="${x-14}" x2="${x+14}" y1="${yOf(l)}" y2="${yOf(l)}" stroke="var(--line)" stroke-width="1.6"/>`;
+  for(let l=10;l<=d;l+=2)h+=`<line x1="${x-14}" x2="${x+14}" y1="${yOf(l)}" y2="${yOf(l)}" stroke="var(--line)" stroke-width="1.6"/>`;
+  const hollow=v&&(v[0]==='h'||v==='w');
+  if(v==='w')h+=`<ellipse cx="${x}" cy="${y}" rx="10" ry="6.6" fill="${c}"/><ellipse cx="${x}" cy="${y}" rx="4.6" ry="3.4" transform="rotate(-40 ${x} ${y})" fill="var(--paper)"/>`;
+  else h+=`<ellipse cx="${x}" cy="${y}" rx="8.4" ry="6.1" transform="rotate(-20 ${x} ${y})" fill="${hollow?'var(--paper)':c}" stroke="${c}" stroke-width="${hollow?2.4:0}"/>`;
+  if(v&&v!=='w'){const u=up(d),sx=u?x+7.4:x-7.4,ey=u?y-50:y+50;h+=`<line x1="${sx}" x2="${sx}" y1="${y+(u?-2:2)}" y2="${ey}" stroke="${c}" stroke-width="1.8"/>`;
+    if(v==='e'&&!beamed)h+=u?`<path d="M${sx} ${ey} C${sx+1} ${ey+12} ${sx+17} ${ey+16} ${sx+12} ${ey+36} C${sx+13} ${ey+22} ${sx+6} ${ey+18} ${sx} ${ey+15}Z" fill="${c}"/>`:`<path d="M${sx} ${ey} C${sx+1} ${ey-12} ${sx+17} ${ey-16} ${sx+12} ${ey-36} C${sx+13} ${ey-22} ${sx+6} ${ey-18} ${sx} ${ey-15}Z" fill="${c}"/>`}
+  if(v&&v.endsWith('.'))h+=`<circle cx="${x+15}" cy="${d%2===0?y-STEP+1:y}" r="2.6" fill="${c}"/>`;
+  return h}
+function fretSvg(x,s,f,col){const y=TT+(s-1)*TG;return `<rect x="${x-12}" y="${y-11}" width="24" height="22" fill="var(--paper)"/><text class="fretn" x="${x}" y="${y+7}" style="fill:${col||'var(--ink)'}">${f}</text>`}
+// two eighths on one beat share a beam
+function beams(ns,get){let h='';for(let i=0;i+1<ns.length;i++){const a=ns[i],b=ns[i+1],A=get(i),B=get(i+1);
+  if(!(A&&B&&A.v==='e'&&B.v==='e'&&A.d!=null&&B.d!=null&&a.beat%1===0&&b.beat===a.beat+.5))continue;
+  const dd=(A.d+B.d)/2,u=up(dd),xa=xOf(a)+(u?7.4:-7.4),xb=xOf(b)+(u?7.4:-7.4),ya=yOf(dd)+(u?-50:50),yb=ya,col=A.col||B.col||'var(--ink)';
+  h+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${yb+(u?6:-6)} L${xa} ${ya+(u?6:-6)}z" fill="${col}"/>`;i++}return h}
+function isBeamed(ns,get,i){const a=ns[i],A=get(i);if(!A||A.v!=='e')return false;
+  const pair=(j,k)=>{const P=get(j),Q=get(k);return P&&Q&&P.v==='e'&&Q.v==='e'&&P.d!=null&&Q.d!=null&&ns[j].beat%1===0&&ns[k].beat===ns[j].beat+.5};
+  return (i+1<ns.length&&pair(i,i+1))||(i>0&&pair(i-1,i))}
+function stemDir(ns,get,i){const A=get(i);if(!isBeamed(ns,get,i))return A.d;   // beamed pair: common direction
+  const j=(i+1<ns.length&&get(i+1)&&ns[i+1].beat===ns[i].beat+.5)?i+1:i-1;return (A.d+get(j).d)/2}
+function drawSrc(){const ns=MEAS[m];let h=staffBase(m===0);
+  h+=`<text x="64" y="${BOT-4*G-10}" style="font:800 14px Nunito;fill:var(--mute)">${m+1}</text>`;
+  const get=i=>({v:ns[i].v,d:ns[i].d});
+  ns.forEach((n,i)=>{const x=xOf(n);h+=dirNote(x,n.d,n.v,null,isBeamed(ns,get,i),stemDir(ns,get,i));h+=fretSvg(x,n.s,n.f);if(n.ly)h+=`<text class="lyr" x="${x}" y="${BOT+42}">${n.ly}</text>`});
+  h+=beams(ns,get);$('sv0').innerHTML=h}
+// beamed eighths: head from noteSvg, stem to the shared beam height (dd = mean step of the pair)
+function dirNote(x,d,v,col,beamed,dd){if(!beamed)return noteSvg(x,d,v,col,false);
+  const u=up(dd),c=col||'var(--ink)',y=yOf(d),sx=u?x+7.4:x-7.4,ey=yOf(dd)+(u?-50:50);
+  return noteSvg(x,d,null,col,true)+`<line x1="${sx}" x2="${sx}" y1="${y+(u?-2:2)}" y2="${ey}" stroke="${c}" stroke-width="1.8"/>`}
+function drawMe(){const ns=MEAS[m];let h='';
+  const x=xOf(ns[sel]);if(!ok)h+=`<rect class="col" x="${x-20}" y="${yOf(DMAX)-6}" width="40" height="${TT+5*TG+12-yOf(DMAX)}" rx="10"/>`;
+  h+=staffBase(m===0);
+  const get=i=>{const a=ans[i];if(a.d==null)return null;const r=res&&res[i];return {v:level===1?ns[i].v:a.v,d:a.d,col:r&&r.note===false?'var(--bad)':ok?'var(--green)':null}};
+  ns.forEach((n,i)=>{const x=xOf(n),a=ans[i],r=res&&res[i];
+    if(a.d==null&&!a.s)h+=`<line class="slot" x1="${x}" x2="${x}" y1="${BOT-4*G-4}" y2="${BOT+4}"/>`;
+    if(a.d!=null){const g=get(i);h+=dirNote(x,a.d,g.v,g.col,isBeamed(ns,get,i),stemDir(ns,get,i))}
+    if(a.d==null&&a.s)h+=`<line class="slot" x1="${x}" x2="${x}" y1="${BOT-4*G-4}" y2="${BOT+4}"/>`;
+    const tc=r&&r.tab===false?'var(--bad)':ok?'var(--green)':null;
+    if(a.s&&a.f!=null)h+=fretSvg(x,a.s,a.f,tc);
+    else if(a.s)h+=`<circle cx="${x}" cy="${TT+(a.s-1)*TG}" r="8" fill="var(--gold)"/>`;
+    else h+=`<line class="slot" x1="${x}" x2="${x}" y1="${TT-2}" y2="${TT+5*TG+2}"/>`});
+  h+=beams(ns,get);
+  if(!ok){h+=`<rect class="hit" id="stHit" x="56" y="${yOf(DMAX)-8}" width="${W-60}" height="${yOf(DMIN)-yOf(DMAX)+16}"/>`;
+    for(let k=1;k<=6;k++)h+=`<rect class="hit" data-s="${k}" x="56" y="${TT+(k-1)*TG-9}" width="${W-60}" height="18"/>`}
+  $('sv1').innerHTML=h}
+
+// ---------- flow
+function show(){const ns=MEAS[m];ans=ns.map(()=>({d:null,v:null,s:0,f:null}));sel=0;res=null;ok=false;tries=0;
+  localStorage.setItem('jb-ab-m',m);document.body.classList.remove('fin');
+  $('cnt').textContent=`Takt ${m+1} / 32`;$('pbar').style.width=(100*solved.size/32)+'%';
+  $('prev').disabled=m===0;$('nextM').disabled=m===31;
+  $('vTxt').textContent=ns.length===1?'1 Note':ns.length+' Noten';
+  $('durs').style.display=level===2?'':'none';$('durs').innerHTML=level===2?'<span class="t">Wert:</span>'+[['w','𝅝'],['h','𝅗𝅥'],['q','♩'],['e','♪']].map(([v,s])=>`<button class="k mus" data-v="${v}" aria-label="${{w:'Ganze',h:'Halbe',q:'Viertel',e:'Achtel'}[v]}">${s}</button>`).join('')+'<button class="k" data-dot="1" aria-label="Punkt">•</button>':'';
+  $('frets').innerHTML='<span class="t">Bund:</span>'+[0,1,2,3,4,5].map(f=>`<button class="k" data-f="${f}">${f}</button>`).join('');
+  $('res').textContent='';$('go').textContent='Prüfen';$('score').textContent=solved.size+' / 32 Takte';
+  drawSrc();refresh()}
+function complete(){return ans.every(a=>a.d!=null&&a.s&&a.f!=null&&(level===1||a.v))}
+function refresh(){const a=ans[sel];
+  document.querySelectorAll('#frets .k').forEach(b=>{b.disabled=ok||!a.s;b.setAttribute('aria-pressed',a.s&&a.f===+b.dataset.f)});
+  document.querySelectorAll('#durs [data-v]').forEach(b=>{b.disabled=ok;b.setAttribute('aria-pressed',!!a.v&&a.v.replace('.','')===b.dataset.v)});
+  document.querySelectorAll('#durs [data-dot]').forEach(b=>{b.disabled=ok||!a.v||a.v==='w'||a.v==='e';b.setAttribute('aria-pressed',!!a.v&&a.v.endsWith('.'))});
+  ['up','down','del'].forEach(id=>$(id).disabled=ok||a.d==null);
+  $('go').disabled=!ok&&!complete();drawMe()}
+function check(){const ns=MEAS[m];tries++;
+  res=ns.map((n,i)=>({note:ans[i].d===n.d&&(level===1||ans[i].v===n.v),tab:ans[i].s===n.s&&ans[i].f===n.f}));
+  const bad=res.filter(r=>!r.note||!r.tab).length;
+  if(!bad){ok=true;if(!solved.has(m)){solved.add(m);if(tries===1)firstOk++}localStorage.setItem('jb-ab-ok',JSON.stringify([...solved]));localStorage.setItem('jb-ab-first',firstOk);
+    $('res').textContent=tries===1?'✓ alles richtig':'✓ jetzt stimmt alles';$('res').className='res ok';$('go').textContent=m<31?'Nächster Takt →':'Fertig →';
+    $('pbar').style.width=(100*solved.size/32)+'%';$('score').textContent=solved.size+' / 32 Takte';playMeasure(m)}
+  else{const nb=res.filter(r=>!r.note).length,tb=res.filter(r=>!r.tab).length,p=[];
+    if(nb)p.push(nb===1?'1 Note':nb+' Noten');if(tb)p.push(tb===1?'1 Bundzahl':tb+' Bundzahlen');
+    $('res').textContent='✗ '+p.join(' und ')+' noch falsch (rot)';$('res').className='res no';sel=res.findIndex(r=>!r.note||!r.tab)}
+  refresh()}
+function nextMeasure(){if(m<31){m++;show();return}
+  document.body.classList.add('fin');$('go').disabled=true;
+  $('doneTxt').textContent=`${solved.size} von 32 Takten abgeschrieben, ${firstOk} davon gleich beim ersten Prüfen richtig.`}
+function touch(i){if(res&&res[i]){res[i]=null;$('res').textContent=''}}
+
+// ---------- input
+function svgPoint(e){const sv=$('sv1'),pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(sv.getScreenCTM().inverse())}
+const nearest=x=>{const ns=MEAS[m];let b=0;ns.forEach((n,i)=>{if(Math.abs(xOf(n)-x)<Math.abs(xOf(ns[b])-x))b=i});return b};
+$('sv1').addEventListener('click',e=>{if(ok)return;const hit=e.target.closest('.hit');if(!hit)return;const p=svgPoint(e);sel=nearest(p.x);
+  if(hit.dataset.s){ans[sel].s=+hit.dataset.s;ans[sel].f=null;touch(sel)}
+  else{ans[sel].d=Math.max(DMIN,Math.min(DMAX,Math.round((BOT-p.y)/STEP)));touch(sel);playStep(ans[sel].d)}
+  refresh()});
+function nudge(k){const a=ans[sel];if(ok||a.d==null)return;a.d=Math.max(DMIN,Math.min(DMAX,a.d+k));touch(sel);playStep(a.d);refresh()}
+$('up').onclick=()=>nudge(1);$('down').onclick=()=>nudge(-1);
+$('del').onclick=()=>{if(ok)return;ans[sel]={d:null,v:ans[sel].v,s:0,f:null};touch(sel);refresh()};
+$('frets').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b||ok||!ans[sel].s)return;ans[sel].f=+b.dataset.f;touch(sel);
+  // hop to the next note that still needs something
+  const ns=MEAS[m],need=i=>ans[i].d==null||!ans[i].s||ans[i].f==null||(level===2&&!ans[i].v);
+  for(let k=1;k<=ns.length;k++){const j=(sel+k)%ns.length;if(need(j)){sel=j;break}}
+  refresh()});
+$('durs').addEventListener('click',e=>{const b=e.target.closest('.k');if(!b||ok)return;const a=ans[sel];
+  if(b.dataset.v)a.v=b.dataset.v;else if(a.v&&a.v!=='w'&&a.v!=='e')a.v=a.v.endsWith('.')?a.v.slice(0,-1):a.v+'.';
+  touch(sel);refresh()});
+$('go').onclick=()=>ok?nextMeasure():complete()&&check();
+$('prev').onclick=()=>{if(m>0){m--;show()}};$('nextM').onclick=()=>{if(m<31){m++;show()}};
+$('again').onclick=()=>{solved.clear();firstOk=0;localStorage.setItem('jb-ab-ok','[]');localStorage.setItem('jb-ab-first',0);m=0;show()};
+$('hear').onclick=()=>playMeasure(m);
+$('hearAll').onclick=()=>{let t=0;MEAS.forEach((_,i)=>{playMeasure(i,t);t+=4*.5})};
+document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=+b.dataset.lv;localStorage.setItem('jb-ab-lv',level);
+  document.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));show()});
+document.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.lv===level));
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('go').disabled){e.preventDefault();$('go').click();return}
+  if(ok)return;
+  if(e.key==='ArrowUp'){e.preventDefault();nudge(1)}else if(e.key==='ArrowDown'){e.preventDefault();nudge(-1)}
+  else if(e.key==='ArrowLeft'){sel=Math.max(0,sel-1);refresh()}else if(e.key==='ArrowRight'){sel=Math.min(MEAS[m].length-1,sel+1);refresh()}
+  else if(/^[0-5]$/.test(e.key)){const b=document.querySelector(`#frets [data-f="${e.key}"]`);b&&!b.disabled&&b.click()}});
+
+// ---------- sound: a plucked string (Karplus-Strong), same as in the play-along page
+let ctx=null;const bufs={};
+function play(midi,when=0,len=1.8){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.resume();
+  if(!bufs[midi]){const sr=ctx.sampleRate,P2=Math.round(sr/(440*2**((midi-69)/12))),n=Math.floor(sr*1.8),b=ctx.createBuffer(1,n,sr),y=b.getChannelData(0);
+    for(let i=0;i<P2;i++)y[i]=Math.random()*2-1;for(let i=P2;i<n;i++)y[i]=.996*.5*(y[i-P2]+y[i-P2+1>=i?i-P2:i-P2+1]);
+    let mx=0;for(let i=0;i<n;i++)mx=Math.max(mx,Math.abs(y[i]));for(let i=0;i<n;i++)y[i]/=mx;bufs[midi]=b}
+  const s=ctx.createBufferSource(),g=ctx.createGain(),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;g.gain.value=.6;
+  s.buffer=bufs[midi];s.connect(lp).connect(g).connect(ctx.destination);const t=ctx.currentTime+when;s.start(t);
+  g.gain.setValueAtTime(.6,t+Math.max(.05,len-.05));g.gain.linearRampToValueAtTime(0,t+len)}
+const playStep=d=>play(d>=0?STEPMIDI[d]:{'-1':50,'-2':48,'-3':47}[d]);
+function playMeasure(i,off=0){MEAS[i].forEach(n=>play(n.midi,off+n.beat*.5,n.dur*.5+.05))}
+
+show();
+document.fonts&&document.fonts.ready.then(()=>{drawSrc();drawMe()});
+</script>
+</body>
+</html>

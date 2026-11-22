@@ -23,6 +23,10 @@ Melodie: James Lord Pierpont (1857), gemeinfrei.
 
 `tonleiter.html` übt die Reihenfolge der Notennamen: Aufsagen (C aufwärts, abwärts, ab jedem Ton, auch rückwärts), Lücken füllen und „Was kommt vor/nach …?“. Richtige Töne erklingen und erscheinen im Notensystem; die Halbtonschritte E–F und H–C sind markiert.
 
+## Abschreiben
+
+`abschreiben.html` zeigt die Melodie Takt für Takt als Vorlage (Noten, Tab, Text). Darunter steht ein leeres Notensystem mit Tab. Man tippt die Noten ins System, im Tab die Saite und darunter die Bundzahl, und prüft den Takt. Bei „Schwer“ wählt man auch die Notenwerte. Der Fortschritt bleibt im Browser gespeichert.
+
 ## Fire TV
 
 `firetv/` baut eine kleine Android-App für den Fire TV (Cube), die `index.html` mitbringt und im Fernbedienungsmodus (`index.html#tv`) öffnet: Pfeiltasten wählen, OK drückt, Play/Pause startet und stoppt. Bauen mit den Ubuntu-Paketen des Android SDK:
