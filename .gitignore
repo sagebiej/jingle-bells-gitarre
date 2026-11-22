@@ -16,6 +16,9 @@ output/
 *.apk
 *.idsig
 *.keystore
+handy/build/
+handy/res/
+handy/assets/
 firetv/build/
 firetv/res/
 firetv/assets/

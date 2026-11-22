@@ -25,3 +25,12 @@ CUBE=192.168.1.20:5555 firetv/build.sh install
 ```
 
 Der Signierschlüssel liegt außerhalb des Repos (`~/.local/share/jinglebells-tv/`).
+
+## Android-Handy
+
+`handy/` baut eine App für Android-Handys ohne Browser, etwa mit Kinderkonto. Sie lädt die Seite von GitHub Pages, ist also immer aktuell, und nimmt ohne Internet die mitgebrachte `index.html`. Das Mikrofon wird beim ersten Üben abgefragt.
+
+```bash
+handy/build.sh             # baut handy/jinglebells-handy.apk
+handy/build.sh install     # installiert per USB (adb, USB-Debugging an)
+```
